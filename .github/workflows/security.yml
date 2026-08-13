@@ -1,23 +1,29 @@
 name: Security
+
 on:
   push:
     branches:
       - main
   pull_request:
+
 permissions:
   contents: read
+
 jobs:
   security:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Build production image
         run: |
           docker build \
             --target production \
             --tag docker-ci-demo:security \
             .
+
       - name: Scan Docker image
         uses: aquasecurity/trivy-action@v0.32.0
         with:
@@ -27,3 +33,4 @@ jobs:
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL
+          trivy-version: "0.73.0"
