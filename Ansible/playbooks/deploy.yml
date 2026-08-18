@@ -1,0 +1,6 @@
+---
+- name: Deploy IstroSec application
+  hosts: app_servers
+  become: true
+  roles:
+    - role: docker_app

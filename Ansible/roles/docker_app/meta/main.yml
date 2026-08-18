@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: Mates
+  description: Deploy the IstroSec application using Docker Compose
+  license: MIT
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+
+  galaxy_tags:
+    - docker
+    - compose
+    - deployment
+    - web
+
+dependencies: []

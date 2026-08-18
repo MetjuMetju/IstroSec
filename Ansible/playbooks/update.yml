@@ -1,0 +1,22 @@
+---
+- name: Update IstroSec application
+  hosts: app_servers
+  become: true
+  tasks:
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry_url: ghcr.io
+        username: "{{ vault_registry_username }}"
+        password: "{{ vault_registry_token }}"
+        reauthorize: true
+      no_log: true
+    - name: Pull latest application image
+      community.docker.docker_image:
+        name: "{{ app_image }}"
+        source: pull
+    - name: Recreate application with latest image
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_project_dir }}"
+        state: present
+        pull: always
+        recreate: always

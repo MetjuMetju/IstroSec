@@ -1,0 +1,5 @@
+---
+app_name: istrosec
+app_environment: production
+app_image: ghcr.io/metjumetju/istrosec:main
+app_container_port: 5000

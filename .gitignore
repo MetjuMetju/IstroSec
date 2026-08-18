@@ -1,10 +1,29 @@
+# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
 .venv/
+
+# Environment / secrets
 .env
 .envrc.local
-certs/
 *.log
+
+# TLS certificates / private keys
+certs/
+*.key
+*.pem
+
+# Ansible temporary files
+*.retry
+.ansible/
+
+# Ansible Vault plaintext / temporary files
+vault-password-file
+.vault-password-file
+
+# Editor / OS
 .DS_Store
+.vscode/
+.idea/
