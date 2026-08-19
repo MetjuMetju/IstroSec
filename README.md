@@ -1,98 +1,81 @@
-# Docker CI Demo
+# IstroSec
 
-A minimal HTTPS web application demonstrating Docker multi-stage builds,
-Docker Compose, CI, Docker image security scanning, application versioning,
-and a reproducible development environment using Nix and direnv.
+IstroSec is a containerized Flask web application demonstrating a complete
+Docker CI/CD workflow with GitHub Actions, GitHub Container Registry,
+security scanning, versioning, and Ansible deployment.
 
-## Requirements
+## Features
 
-The following tools are recommended:
-
-- Git
-- Docker
+- Flask web application
+- Multi-stage Docker build
 - Docker Compose
-- Python 3.12
-- OpenSSL
-- Nix
-- direnv
+- HTTPS with automatically generated self-signed certificates
+- GitHub Actions CI/CD
+- GitHub Container Registry
+- Trivy container security scanning
+- Automated deployment with Ansible
+- Separate development and production environments
+- Nix and direnv development environment
 
 ## Application
 
-The application is a minimal Flask web service.
-The application exposes:
+The application provides:
+    GET /
+    GET /health
 
-- `/`
-- `/health`
+The application runs on port 5000 inside the container.
 
-The application supports HTTPS.
+## Requirements
 
-The development and production Docker Compose configurations automatically
-create a self-signed TLS certificate using a bootstrap container.
+    Git
+    Docker
+    Docker Compose
+    Python 3.12
+    OpenSSL
+    Ansible
+    Nix
+    direnv
+
+## Local Development
+
+Start the development environment:
+    docker compose -f docker-compose.dev.yml up --build
+
+Test the application:
+    curl -k https://localhost:5000/
+
+Health check:
+    curl -k https://localhost:5000/health
+
+Stop the environment:
+    docker compose -f docker-compose.dev.yml down
+
+## Docker
+
+Build the development image:
+    docker build --target development -t istrosec:dev .
+
+Build the production image:
+    docker build --target production -t istrosec:latest .
+
+Run the production image:
+    docker run --rm -p 5000:5000 istrosec:latest
 
 ## Versioning
 
-The current application version is stored in the `VERSION` file.
-The initial version is:
-    1.0.0
+The application version is stored in:
+    VERSION
 
-Create a new version using a Git tag:
+Create a new release:
     git tag v1.1.0
     git push origin v1.1.0
 
-## Development with Docker Compose
-
-Build and start the development environment:
-    docker compose -f docker-compose.dev.yml up --build
-
-The application is available at:
-    https://localhost:5000
-
-Because the certificate is self-signed, a browser will display a certificate
-warning.
-
-The certificate can be tested with curl:
-    curl -k https://localhost:5000
-
-The health endpoint can be tested with:
-    curl -k https://localhost:5000/health
-
-Stop the development environment:
-    docker compose -f docker-compose.dev.yml down
-
-## Production with Docker Compose
-
-Build and start the production environment:
-    docker compose -f docker-compose.prod.yml up --build
-
-The application is available at:
-    https://localhost:5000
-
-Test the application:
-    curl -k https://localhost:5000
-
-Stop the production environment:
-    docker compose -f docker-compose.prod.yml down
-
-## Docker builds
-
-Build the development image:
-    docker build --target development -t docker-ci-demo:dev .
-
-Build the production image:
-    docker build --target production -t docker-ci-demo:latest .
-
-Run the production image:
-    docker run --rm \
-      -p 5000:5000 \
-      -v docker-ci-demo_certs:/certs:ro \
-      docker-ci-demo:latest
-
-## Code quality
+## Testing
 
 Install development dependencies:
     python -m pip install -r requirements-dev.txt
 
-Run the tests:
+Run tests:
     pytest
 
 Check formatting:
@@ -101,77 +84,79 @@ Check formatting:
 Run the linter:
     ruff check .
 
-The GitHub Actions quality workflow automatically performs all three checks.
+## CI/CD
 
-## CI
+GitHub Actions are used for automated quality checks, Docker image builds, security scanning, and publishing.
 
-The repository contains three GitHub Actions workflows.
+Quality checks include:
+    Ruff formatting
+    Ruff linting
+    Pytest
 
-### Quality
+The Docker workflow builds the production image and publishes it to GitHub Container Registry:
+    ghcr.io/metjumetju/istrosec
 
-The quality workflow:
+The security workflow scans the container image with Trivy and fails when critical vulnerabilities are detected.
 
-1. Installs Python dependencies.
-2. Checks code formatting.
-3. Runs Ruff.
-4. Runs pytest.
+## Ansible Deployment
 
-### Docker
+The Ansible configuration is located in:
+    Ansible/
 
-The Docker workflow:
-1. Builds the production Docker image.
-2. Creates Docker image metadata.
-3. Pushes the image to GitHub Container Registry.
+Development inventory:
+    inventories/dev/hosts.yml
 
-### Security
+Production inventory:
+    inventories/prod/hosts.yml
 
-The security workflow:
-1. Builds the production Docker image.
-2. Runs Trivy against the image.
-3. Checks for critical vulnerabilities.
-4. Fails when critical vulnerabilities are found.
+The deployment uses separate development and production inventories and Vault secrets.
 
-## Local security scanning
+Run a development deployment:
 
-If Docker Scout is available, the image can be inspected with:
-    docker scout quickview docker-ci-demo:latest
+    ansible-playbook \
+      -i inventories/dev/hosts.yml \
+      playbooks/deploy.yml \
+      --ask-pass \
+      --ask-become-pass \
+      --vault-id dev@prompt
 
-Scan the image for vulnerabilities:
-    docker scout cves docker-ci-demo:latest
+Run a production deployment:
+
+    ansible-playbook \
+      -i inventories/prod/hosts.yml \
+      playbooks/deploy.yml \
+      --ask-pass \
+      --ask-become-pass \
+      --vault-id prod@prompt
+
+The deployment:
+
+    Logs in to GitHub Container Registry
+    Pulls the latest container image
+    Deploys the Docker Compose configuration
+    Starts or updates the application
+
+Development and production applications use separate container names,
+project directories, and host ports so they can run simultaneously.
+
+## TLS Certificates
+
+TLS certificates are generated automatically by the Docker Compose bootstrap service.
+The generated certificate and private key are stored in a Docker named volume.
+Certificates are not stored in the Git repository.
+The certificates are self-signed and are intended for development and lab use.
 
 ## Nix and direnv
 
-The repository contains a `flake.nix` defining the development environment.
-Enter the Nix development environment:
+The repository contains a Nix development environment.
+
+Start the environment:
     nix develop
 
-If direnv is installed, allow the repository environment:
+If direnv is installed:
     direnv allow
 
-The development environment provides tools including:
-- Python
-- uv
-- Docker
-- Docker Compose
-- Git
-- OpenSSL
-- direnv
-
-## TLS certificates
-
-The Compose bootstrap service generates a self-signed certificate.
-The generated files are:
-
-    server.crt
-    server.key
-
-They are stored in a Docker named volume.
-The certificates are not committed to Git.
-
-The production application uses the generated certificate and private key
-directly with Gunicorn.
-
-## Repository structure
+## Repository Structure
 
     .
     Dockerfile
@@ -197,3 +182,11 @@ directly with Gunicorn.
             quality.yml
             docker.yml
             security.yml
+
+    Ansible/
+        inventories/
+            dev/
+            prod/
+        playbooks/
+        roles/
+            docker_app/
