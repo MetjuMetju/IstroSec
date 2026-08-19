@@ -6,6 +6,7 @@
     owner: root
     group: root
     mode: "0755"
+
 - name: Log in to GitHub Container Registry
   community.docker.docker_login:
     registry_url: "{{ app_registry }}"
@@ -13,6 +14,7 @@
     password: "{{ vault_registry_token }}"
     reauthorize: true
   no_log: true
+
 - name: Deploy Docker Compose configuration
   ansible.builtin.template:
     src: docker-compose.yml.j2
@@ -21,10 +23,7 @@
     group: root
     mode: "0644"
   notify: Restart application
-- name: Pull latest application image
-  community.docker.docker_image:
-    name: "{{ app_image }}"
-    source: pull
+
 - name: Start application with Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ app_project_dir }}"

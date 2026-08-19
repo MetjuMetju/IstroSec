@@ -1,192 +1,117 @@
 # IstroSec
 
-IstroSec is a containerized Flask web application demonstrating a complete
-Docker CI/CD workflow with GitHub Actions, GitHub Container Registry,
-security scanning, versioning, and Ansible deployment.
-
-## Features
-
-- Flask web application
-- Multi-stage Docker build
-- Docker Compose
-- HTTPS with automatically generated self-signed certificates
-- GitHub Actions CI/CD
-- GitHub Container Registry
-- Trivy container security scanning
-- Automated deployment with Ansible
-- Separate development and production environments
-- Nix and direnv development environment
+- IstroSec is a Docker and Ansible deployment project for a minimal HTTPS web application.
+- The project provides containerized application delivery through GitHub Actions, GitHub Container Registry and Ansible.
 
 ## Application
 
-The application provides:
-    GET /
-    GET /health
+- The application is a minimal HTTPS web service packaged as a Docker image.
+- It includes
+    - Multi stage Docker build
+    - Development and production targets
+    - Docker Compose configurations
+    - Automatic TLS certificate bootstrap
+    - Application health endpoint
+    - Application versioning
 
-The application runs on port 5000 inside the container.
+## CI
 
-## Requirements
+- GitHub Actions provide
 
-    Git
-    Docker
-    Docker Compose
-    Python 3.12
-    OpenSSL
-    Ansible
-    Nix
-    direnv
+    - Code quality checks
+    - Docker image build
+    - Docker image publishing to GHCR
+    - Docker image security scanning
 
-## Local Development
+- The application image is published as:
+    - ghcr.io/metjumetju/istrosec:main
 
-Start the development environment:
-    docker compose -f docker-compose.dev.yml up --build
+## Ansible
 
-Test the application:
-    curl -k https://localhost:5000/
+- Ansible provides automated Docker installation and application deployment.
 
-Health check:
-    curl -k https://localhost:5000/health
+- The project contains
 
-Stop the environment:
-    docker compose -f docker-compose.dev.yml down
+- DEV and PROD inventories
+- Logical host groups
+- group_vars and host_vars
+- Separate Ansible Vault files
+- Separate DEV and PROD Vault IDs
+- Docker installation playbook
+- Application deployment playbook
+- Application update playbook
+- Reusable Docker application role
 
-## Docker
+## Environments
 
-Build the development image:
-    docker build --target development -t istrosec:dev .
+- DEV
+    - dev-app01
+    - dev-app02
 
-Build the production image:
-    docker build --target production -t istrosec:latest .
+- PROD
+    - prod-app01
+    - prod-app02
 
-Run the production image:
-    docker run --rm -p 5000:5000 istrosec:latest
+- DEV and PROD use separate inventories and encrypted Vault files.
 
-## Versioning
+## Application Ports
 
-The application version is stored in:
-    VERSION
+- All application containers listen on internal port 5000.
+- Each host exposes the application on a unique host port.
 
-Create a new release:
-    git tag v1.1.0
-    git push origin v1.1.0
+    - dev-app01   Host 5002   Container 5000
+    - dev-app02   Host 5003   Container 5000
+    - prod-app01  Host 5004   Container 5000
+    - prod-app02  Host 5005   Container 5000
 
-## Testing
+- This allows all application instances to run simultaneously on the same Docker host.
 
-Install development dependencies:
-    python -m pip install -r requirements-dev.txt
+## Security
 
-Run tests:
-    pytest
+- Sensitive registry credentials are stored using Ansible Vault.
+-  DEV and PROD use separate Vault IDs.
 
-Check formatting:
-    ruff format --check .
+- DEV
+    - dev@prompt
+- PROD
+    - prod@prompt
 
-Run the linter:
-    ruff check .
+- Registry credentials are protected from Ansible output using no_log.
+- TLS certificates are generated during deployment and are not stored in the repository.
+- The application uses HTTPS with a self signed certificate in the lab environment.
 
-## CI/CD
+## Deployment
 
-GitHub Actions are used for automated quality checks, Docker image builds, security scanning, and publishing.
-
-Quality checks include:
-    Ruff formatting
-    Ruff linting
-    Pytest
-
-The Docker workflow builds the production image and publishes it to GitHub Container Registry:
-    ghcr.io/metjumetju/istrosec
-
-The security workflow scans the container image with Trivy and fails when critical vulnerabilities are detected.
-
-## Ansible Deployment
-
-The Ansible configuration is located in:
-    Ansible/
-
-Development inventory:
-    inventories/dev/hosts.yml
-
-Production inventory:
-    inventories/prod/hosts.yml
-
-The deployment uses separate development and production inventories and Vault secrets.
-
-Run a development deployment:
-
-    ansible-playbook \
-      -i inventories/dev/hosts.yml \
-      playbooks/deploy.yml \
-      --ask-pass \
-      --ask-become-pass \
-      --vault-id dev@prompt
-
-Run a production deployment:
-
-    ansible-playbook \
-      -i inventories/prod/hosts.yml \
-      playbooks/deploy.yml \
-      --ask-pass \
-      --ask-become-pass \
-      --vault-id prod@prompt
-
-The deployment:
-
-    Logs in to GitHub Container Registry
-    Pulls the latest container image
-    Deploys the Docker Compose configuration
-    Starts or updates the application
-
-Development and production applications use separate container names,
-project directories, and host ports so they can run simultaneously.
-
-## TLS Certificates
-
-TLS certificates are generated automatically by the Docker Compose bootstrap service.
-The generated certificate and private key are stored in a Docker named volume.
-Certificates are not stored in the Git repository.
-The certificates are self-signed and are intended for development and lab use.
-
-## Nix and direnv
-
-The repository contains a Nix development environment.
-
-Start the environment:
-    nix develop
-
-If direnv is installed:
-    direnv allow
+- The docker_app Ansible role is responsible for application deployment.
+- It creates:
+    - the application directory
+    - authenticates against GHCR
+    - deploys the Docker Compose configuration
+    - pulls the application image and manages the application lifecycle
 
 ## Repository Structure
 
-    .
+    IstroSec
+
+    app
+    tests
+    .github
+    workflows
+
     Dockerfile
     docker-compose.dev.yml
     docker-compose.prod.yml
-    requirements.txt
-    requirements-dev.txt
     VERSION
     README.md
-    flake.nix
-    .envrc
-    .gitignore
 
-    app/
-        __init__.py
-        main.py
+    Ansible
+    inventories
+        dev
+        prod
+    roles
+        docker_app
+    playbooks
+        install-docker.yml
+        deploy.yml
+        update.yml
 
-    tests/
-        test_main.py
-
-    .github/
-        workflows/
-            quality.yml
-            docker.yml
-            security.yml
-
-    Ansible/
-        inventories/
-            dev/
-            prod/
-        playbooks/
-        roles/
-            docker_app/
